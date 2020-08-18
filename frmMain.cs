@@ -53,6 +53,8 @@ namespace CQC.ConTest
         //StreamWriter 7;
 
         SynchronizationContext mSyncContext = null;
+        OverlayTextPainter overlayLabel = new OverlayTextPainter();
+        //OverlayImagePainter overlayButton = new OverlayImagePainter(buttonImage, hotButtonImage, OnCancelButtonClick);
 
         DevExpress.XtraSplashScreen.SplashScreenManager splashScreenManager1;
         public frmMain()
@@ -61,7 +63,7 @@ namespace CQC.ConTest
             {
                 InitializeComponent();
                 mp = new mainform(this);
-                profibusDP = new DPComm(this.serialPort1);
+                profibusDP = new DPComm(this.serialPort1, System.Environment.CurrentDirectory + "\\TestDD\\DP\\");
                 resultList = new ucResultList();
                 testToExec = new testSchedule();
                 recentProjects = new List<TestProject>();
@@ -75,7 +77,7 @@ namespace CQC.ConTest
                 splashScreenManager1.ClosingDelay = 500;
                 spaces = new char[] { ' ', '\t', '\n' };
                 hartFunctions = new HartTestFuncs();
-                dpFunctions = new DPTestFuncs();
+                dpFunctions = new DPTestFuncs(profibusDP);
                 tresList = new BindingSource();
                 mSyncContext = SynchronizationContext.Current;
             }
@@ -96,6 +98,7 @@ namespace CQC.ConTest
             {
                 InitializeComponent();
                 mp = new mainform(this);
+                profibusDP = new DPComm(this.serialPort1, System.Environment.CurrentDirectory + "\\TestDD\\DP\\");
                 resultList = new ucResultList();
                 testToExec = new testSchedule();
                 recentProjects = new List<TestProject>();
@@ -109,7 +112,7 @@ namespace CQC.ConTest
                 splashScreenManager1.ClosingDelay = 500;
                 spaces = new char[] { ' ', '\t', '\n' };
                 hartFunctions = new HartTestFuncs();
-                dpFunctions = new DPTestFuncs();
+                dpFunctions = new DPTestFuncs(profibusDP);
                 tresList = new BindingSource();
                 mSyncContext = SynchronizationContext.Current;
                 if (bSkin)
@@ -155,7 +158,7 @@ namespace CQC.ConTest
             }
         }
 
-        public returncode USART_Send(byte[] data, byte len, byte add = 0)
+        public returncode USART_Send(byte[] data, byte len, byte add = 0, StreamWriter sw = null)
         {
             /*
             if (serialPort1.IsOpen && mp.gsRspInfo.ucSendState != mainform.MSG_PENDING)
@@ -174,15 +177,25 @@ namespace CQC.ConTest
                 mp.gsRspInfo.ucSendState = mainform.MSG_PENDING;
                 //rcvlen = 0;
                 serialPort1.Write(data, 0, len);
+                string msgSent = mp.buildStringTypeInfo(len, data);
+                if (sw != null)
+                {
+                    saveLogfile(sw, "Message sent to device.");
+                    saveLogfile(sw, msgSent);
+                }
             }
             else
             {
+                if (sw != null)
+                {
+                    saveLogfile(sw, "Message recieved from device.");
+                }
                 return returncode.eSerErr;
             }
             return returncode.eOk;
         }
 
-        public returncode RecvHartData()
+        public returncode RecvHartData(StreamWriter sw)
         {
             //rcvlen = 0;
             DateTime dt = DateTime.Now;
@@ -224,6 +237,11 @@ namespace CQC.ConTest
                 }
                 mp.rcvlen += (byte)d;
             } while (d != 0);
+
+            string msgRecv = mp.buildStringTypeInfo((byte)mp.rcvlen, mp.rcvbuf);
+            saveLogfile(sw, "Message recieved from device.");
+            saveLogfile(sw, msgRecv);
+            //saveLogfile(sw, "Command 0 recevied.");
 
             if (mp.rcvlen == 0)
             {
@@ -952,12 +970,14 @@ namespace CQC.ConTest
                 case NodeType.testcase:
                     TestCaseModel caseModel = ni.SourceData as TestCaseModel;
                     caseModel.Name = ni.nodename;
+                    caseModel.TextValue = testProjectExplorer.GetTestCaseValue(caseModel.FoldPath);
                     ni.SourceData = caseModel;
                     DispTestCase(caseModel);
                     break;
 
                 case NodeType.logcase:
                     DispTestLog(ni.nodename, ni.wholename);
+                    //DispTestLog(ni.wholename);
                     break;
 
                 case NodeType.result:
@@ -1132,15 +1152,19 @@ namespace CQC.ConTest
 
                         if (!parseTestCase(ni.wholename, ref tcase))
                         {
+                            sendOutput(1, "Test Case {0} parse failed", tcase.name);
+                            //saveLogfile(sw, "Test Case {0} parse failed", tcase.name);
                             testToExec.Clear();
                             return false;
                         }
                         sendOutput(1, "Adding Test Case {0}...", tcase.name);
+                        //saveLogfile(sw, "Adding Test Case {0}...", tcase.name);
                         numTestcase++;
                         testToExec[ni.parentid].Add(tcase);
                     }
                 }
                 sendOutput(2, "Test Class {0} parsed OK.", classtln.GetValue(0));
+                //saveLogfile(sw, "Test Class {0} parsed OK.", classtln.GetValue(0));
             }
 
             return true;
@@ -1156,6 +1180,7 @@ namespace CQC.ConTest
 
                 if (devices[dev] == null)
                 {
+                    sendOutput(2, "Invalid device.");
                     ;//log invalid device
                     return false;
                 }
@@ -1205,7 +1230,10 @@ namespace CQC.ConTest
             }
             catch (Exception e)
             {
-                MessageBox.Show(e.ToString(), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);//Log to taskList???
+                //MessageBox.Show(e.ToString(), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);//Log to taskList???
+                sendOutput(1, "Error: " + e.Message);
+                //saveLogfile(sw, "Error: " + e.Message);
+
                 return false;
             }
             return true;
@@ -1216,8 +1244,11 @@ namespace CQC.ConTest
         int casefailed;
         int casenotrun;
 
+        IOverlaySplashScreenHandle loadHandle = null;
+
         void startTestExec()
         {
+            iStart.Enabled = false;
             numofcase = 0;
             casepassed = 0;
             casefailed = 0;
@@ -1225,17 +1256,37 @@ namespace CQC.ConTest
             tresList.Clear();
             sendOutput(1, "");
 
-            splashScreenManager1.ShowWaitForm();
-            splashScreenManager1.SetWaitFormDescription("Execute.....");     // 信息
+            //splashScreenManager1.Properties.ParentForm.Enabled = false;
+            //SplashScreenManager.ShowDefaultWaitForm(this, true, true);
+            //splashScreenManager1.ShowWaitForm();
+            //splashScreenManager1.SetWaitFormCaption("Test started.");     // 标题
+            //splashScreenManager1.SetWaitFormDescription("Executing Test Schedule.....");     // 信息
+            //loadHandle = SplashScreenManager.ShowOverlayForm(this);
+            OverlayWindowOptions op = new OverlayWindowOptions();
+            overlayLabel.Text = "Executing Test Schedule.....\r\nPlease wait...";
+            overlayLabel.Font = new Font("Tahoma", 10);
+            //OverlayWindowCompositePainter owcp = new OverlayWindowCompositePainter(overlayLabel, overlayLabel, overlayLabel);
+            LineAnimationParams lineAnimationParams = new LineAnimationParams(10, 2, 3);
+            loadHandle = SplashScreenManager.ShowOverlayForm(this, true, true, null, null, 100, customPainter : new OverlayWindowCompositePainter(overlayLabel), animationType : WaitAnimationType.Line, lineAnimationParameters : new LineAnimationParams(10, 8, 3));
+
             Thread.Sleep(sleeptime);
         }
 
         void endTestExec()
         {
-            splashScreenManager1.SetWaitFormCaption("Loaded, please wait....");     // 标题
-            splashScreenManager1.SetWaitFormDescription("Execute TestCase .....");     // 信息
+            //splashScreenManager1.SetWaitFormCaption("Test finished.");     // 标题
+            //splashScreenManager1.SetWaitFormDescription("Gernerating test report....");     // 信息
             Thread.Sleep(sleeptime);
-            splashScreenManager1.CloseWaitForm();
+            //splashScreenManager1.CloseWaitForm();
+
+            SplashScreenManager.CloseOverlayForm(loadHandle);
+            sendOutput(2, "{0} cases executed, {1} PASSED, {2} FAILED, {3} NOTRUN", numofcase, casepassed, casefailed, casenotrun);
+            sendOutput(2, "========== Test Ended ==========");
+
+            bTesting = false;
+
+            //splashScreenManager1.Properties.ParentForm.Enabled = true;
+            //iStart.Enabled = true;
         }
 
         delegate void setTresListCallback(TestResult tr);
@@ -1312,26 +1363,27 @@ namespace CQC.ConTest
                                 executeDPTestcase(tc);
                             }
                         }
-                        sendOutput(2, "Class {0} finished", tcl.name);
+                        sendOutput(2, "---------- Test Class {0} finished---------- ", tcl.name);
                     }
                 }
                 catch (Exception e)
                 {
-                    MessageBox.Show(e.ToString());
+                    //MessageBox.Show(e.ToString());
+                    sendOutput(1, "Error: " + e.Message);
+
                     casefailed++;
                 }
-
-                sendOutput(2, "{0} cases executed, {1} PASSED, {2} FAILED, {3} NOTRUN", numofcase, casepassed, casefailed, casenotrun);
-                sendOutput(2, "========== Test Ended ==========");
-
-                setBarItemProperty(iStart, barItemProperty.enabled, true);
-                bTesting = false;
+                Thread.Sleep(1000);
 
                 // 保存测试日志数据
                 SaveTestLog(ucOutput1.text);
-                SaveTestReport(testToExec);
+                if (tp.TestReport)
+                {
+                    SaveTestReport(testToExec);
+                }
 
-                sendOutput(2, " Create Report  Finish ");
+                sendOutput(2, "---------- Test reported created ----------");
+                setBarItemProperty(iStart, barItemProperty.enabled, true);
 
             }
             finally
@@ -1424,7 +1476,6 @@ namespace CQC.ConTest
                     word.UpdateBookmarkValue("TestOrganization", tp.Organization);
                     word.UpdateBookmarkValue("TestDate", DateTime.Now.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-GB")));
                     word.UpdateBookmarkValue("Org_Address", tp.Address);
-
                     word.SetCurrentBookmark("TestClass");
 
                     foreach (testClass item in results)
@@ -1721,7 +1772,8 @@ namespace CQC.ConTest
             }
             else if (tp.TypeofProject == ProjectType.DP)
             {
-                profibusDP = new DPComm();
+                profibusDP.clearDev();
+                //profibusDP = new DPComm();
                 //return true;
                 DPDevice ddev = dev as DPDevice;
                 CDEV_CFG_INFO cDevCfgInfoTemp = new CDEV_CFG_INFO();
@@ -1750,7 +1802,7 @@ namespace CQC.ConTest
                 //str1[7]...：ucCfgData
                 for (int j = 0; j < cDevCfgInfoTemp.ucCfgDataLen; j++)
                 {
-                    cDevCfgInfoTemp.aucCfgData[j] = Convert.ToByte(ddev.CfgData.Substring(j, 2), 16);
+                    cDevCfgInfoTemp.aucCfgData[j] = Convert.ToByte(ddev.CfgData.Substring(j * 2, 2), 16);
                 }
 
                 //str1[]：ucUserExtPrmDataLen
@@ -1764,18 +1816,28 @@ namespace CQC.ConTest
                     }
                 }
 
+                cDevCfgInfoTemp.gsdFileName = ddev.gsdFile;
+
                 profibusDP.addDevice(cDevCfgInfoTemp);
+
+                CFRAME_PARSE_NODE cframe = new CFRAME_PARSE_NODE();
 
                 if (ddev.Offline)
                 {
+                    sendOutput(2, "Device {0} created successed", ddev.devName);
+                    saveLogfile(sw, "Device {0} created successed", ddev.devName);
                     bDevOk = true;
                 }
-                else if (profibusDP.diagDevice(0))
+                else if (profibusDP.diagDevice(0, ref cframe))
                 {
+                    sendOutput(2, "Device {0} created successed", ddev.devName);
+                    saveLogfile(sw, "Device {0} created successed", ddev.devName);
                     bDevOk = true;
                 }
                 else
                 {
+                    sendOutput(2, "Device {0} created failed", ddev.devName);
+                    saveLogfile(sw, "Device {0} created failed", ddev.devName);
                     bDevOk = false;
                 }
             }
@@ -1796,6 +1858,7 @@ namespace CQC.ConTest
         */
 
         public results cmdRes;
+
         public void procRcvHartData(returncode rc, int trannum, uint cmdnum, cmdOperationType_t operation)
         {
             cmdRes = new results();
@@ -1875,11 +1938,13 @@ namespace CQC.ConTest
                 else
                 {
                     sendOutput(2, "Test Device {0} is not available.", (tc.device as HartDevice).devName);
+                    saveLogfile(sw, "Test Device {0} is not available.", (tc.device as HartDevice).devName);
                     tr.Result = TestRes.FAILED;
                     casefailed++;
                     tr.Errors.Add(string.Format("Test Device {0} is not available.", (tc.device as HartDevice).devName));
 
                     sendOutput(2, "Test Case {0} FAILED", tc.name);
+                    saveLogfile(sw, "Test Case {0} FAILED", tc.name);
                     addtoTresList(tr);
                     sendOutput(2, "---------- Test Case {0} finished ----------", tc.name);
                     saveLogfile(sw, "---------- Test Case {0} finished ----------", tc.name);
@@ -1889,19 +1954,33 @@ namespace CQC.ConTest
                     return;
                 }
                 sendOutput(2, "---------- Test Case {0} started ----------", tc.name);
+                saveLogfile(sw, "---------- Test Case {0} started ----------", tc.name);
 
                 parameters pars;
                 results ret;
                 bool bOk = true;
+                hartFunctions.setLogsw(sw);
                 foreach (TestModule tf in tc.testFuncs)
                 {
                     pars = tf.funcPara;
-                    hartFunctions[tf.name].func(pars, out ret);
+                    if (hartFunctions[tf.name] != null)
+                    {
+                        hartFunctions[tf.name].func(pars, out ret);
+                    }
+                    else
+                    {
+                        sendOutput(1, "Function not executed, function " + tf.name + " found");
+                        saveLogfile(sw, "Function not executed, function " + tf.name + " found");
+                        bOk = false;
+                        continue;
+                    }
                     sendOutput(1, "Function {0} executed.", tf.name);
+                    saveLogfile(sw, "Function {0} executed.", tf.name);
                     if (ret.response != tf.funcRes.response)
                     {
                         //log here
                         sendOutput(1, "Response is not expected.");
+                        saveLogfile(sw, "Response is not expected.");
                         tr.Errors.Add("Response is not expected.");
 
                         bOk = false;
@@ -1910,13 +1989,14 @@ namespace CQC.ConTest
                     else
                     {
                         sendOutput(1, "Response is expected {0}.", ret.response.ToString());
+                        saveLogfile(sw, "Response is expected {0}.", ret.response.ToString());
                         foreach (result relexpt in tf.funcRes)
                         {
                             result rel = ret[relexpt.name];
                             if (rel == null)
                             {
                                 sendOutput(1, "Result {0} is invalid, please check Test Case.", relexpt.name);
-
+                                saveLogfile(sw, "Result {0} is invalid, please check Test Case.", relexpt.name);
                                 tr.Errors.Add(string.Format("Result {0} is invalid, please check Test Case.", relexpt.name));
                                 bOk = false;
                             }
@@ -1930,10 +2010,12 @@ namespace CQC.ConTest
                                             && Convert.ToSingle(rel.value) > (Convert.ToSingle(relexpt.value) - 0.01))
                                         {
                                             sendOutput(1, "Result {0} is expected value {1}.", rel.name, relexpt.value);
+                                            saveLogfile(sw, "Result {0} is expected value {1}.", rel.name, relexpt.value);
                                         }
                                         else
                                         {
                                             sendOutput(1, "Result {0} is {1}, is not expected value {2}.", rel.name, rel.value, relexpt.value);
+                                            saveLogfile(sw, "Result {0} is {1}, is not expected value {2}.", rel.name, rel.value, relexpt.value);
 
                                             tr.Errors.Add(string.Format("Result {0} is {1}, is not expected value {2}.", rel.name, rel.value, relexpt.value));
                                             bOk = false;
@@ -1942,6 +2024,7 @@ namespace CQC.ConTest
                                     else
                                     {
                                         sendOutput(1, "Result {0} is {1}, is not expected value {2}.", rel.name, rel.value, relexpt.value);
+                                        saveLogfile(sw, "Result {0} is {1}, is not expected value {2}.", rel.name, rel.value, relexpt.value);
 
                                         tr.Errors.Add(string.Format("Result {0} is {1}, is not expected value {2}.", rel.name, rel.value, relexpt.value));
                                         bOk = false;
@@ -1950,6 +2033,7 @@ namespace CQC.ConTest
                                 else
                                 {
                                     sendOutput(1, "Result {0} is expected value {1}.", rel.name, relexpt.value);
+                                    saveLogfile(sw, "Result {0} is expected value {1}.", rel.name, relexpt.value);
                                 }
                             }
                         }
@@ -1979,9 +2063,9 @@ namespace CQC.ConTest
 
             catch (Exception exp)
             {
-                MessageBox.Show(exp.ToString());
-                sendOutput(2, exp.Message);
-                saveLogfile(sw, exp.Message);
+                //MessageBox.Show(exp.ToString());
+                sendOutput(2, "Error:" + exp.Message);
+                saveLogfile(sw, "Error:" + exp.Message);
                 casefailed++;
                 sw.Flush();
                 sw.Close();
@@ -2010,85 +2094,109 @@ namespace CQC.ConTest
                 bool bDevOk = initDevice(tc.device, sw);
                 if (bDevOk)
                 {
-                    hartFunctions.HartDev = mp.hartDev;
+                    dpFunctions.DPDev = profibusDP;
+                    sendOutput(2, "Test Device {0} is initialized.", (tc.device as DPDevice).devName);
+                    saveLogfile(sw, "Test Device {0} is initialized.", (tc.device as DPDevice).devName);
                 }
                 else
                 {
                     sendOutput(2, "Test Device {0} is not available.", (tc.device as DPDevice).devName);
+                    saveLogfile(sw, "Test Device {0} is not available.", (tc.device as DPDevice).devName);
                     tr.Result = TestRes.FAILED;
                     tr.Errors.Add(string.Format("Test Device {0} is not available.", (tc.device as DPDevice).devName));
 
                     casefailed++;
                     sendOutput(2, "Test Case {0} FAILED", tc.name);
+                    saveLogfile(sw, "Test Case {0} FAILED", tc.name);
                     sw.Flush();
                     sw.Close();
                     fs.Close();
                     return;
                 }
                 sendOutput(2, "---------- Test Case {0} started ----------", tc.name);
-
+                saveLogfile(sw, "---------- Test Case {0} started ----------", tc.name);
                 parameters pars;
                 results ret;
                 bool bOk = true;
+                dpFunctions.setLogsw(sw);
                 foreach (TestModule tf in tc.testFuncs)
                 {
                     pars = tf.funcPara;
-                    hartFunctions[tf.name].func(pars, out ret);
-                    sendOutput(1, "Function {0} executed.", tf.name);
-                    if (ret.response != tf.funcRes.response)
+                    if (dpFunctions[tf.name] != null)
                     {
-                        //log here
-                        sendOutput(1, "Response is not expected.");
-                        bOk = false;
-                        tr.Errors.Add("Response is not expected.");
-
-                        continue;
-                    }
-                    else
-                    {
-                        sendOutput(1, "Response is expected {0}.", ret.response.ToString());
-                        foreach (result relexpt in tf.funcRes)
+                        dpFunctions[tf.name].func(pars, out ret);
+                        sendOutput(1, "Function {0} executed.", tf.name);
+                        saveLogfile(sw, "Function {0} executed.", tf.name);
+                        if (ret.response != tf.funcRes.response)
                         {
-                            result rel = ret[relexpt.name];
-                            if (rel == null)
-                            {
-                                sendOutput(1, "Result {0} is invalid, please check Test Case.", relexpt.name);
-                                tr.Errors.Add(string.Format("Result {0} is invalid, please check Test Case.", relexpt.name));
+                            //log here
+                            sendOutput(1, "Response is not expected.");
+                            saveLogfile(sw, "Response is not expected.");
+                            bOk = false;
+                            tr.Errors.Add("Response is not expected.");
 
-                                bOk = false;
-                            }
-                            else
+                            continue;
+                        }
+                        else
+                        {
+                            sendOutput(1, "Response is expected {0}.", ret.response.ToString());
+                            saveLogfile(sw, "Response is expected {0}.", ret.response.ToString());
+                            foreach (result relexpt in tf.funcRes)
                             {
-                                if (!rel.value.Equals(relexpt.value))
+                                result rel = ret[relexpt.name];
+                                if (rel == null)
                                 {
-                                    if (relexpt.rtype == resultDataType.floatpoint)
+                                    sendOutput(1, "Result {0} is invalid, please check Test Case.", relexpt.name);
+                                    saveLogfile(sw, "Result {0} is invalid, please check Test Case.", relexpt.name);
+                                    tr.Errors.Add(string.Format("Result {0} is invalid, please check Test Case.", relexpt.name));
+
+                                    bOk = false;
+                                }
+                                else
+                                {
+                                    if (!rel.value.Equals(relexpt.value))
                                     {
-                                        if (Convert.ToSingle(rel.value) < (Convert.ToSingle(relexpt.value) + 0.01)
-                                            && Convert.ToSingle(rel.value) > (Convert.ToSingle(relexpt.value) - 0.01))
+                                        if (relexpt.rtype == resultDataType.floatpoint)
                                         {
-                                            sendOutput(1, "Result {0} is expected value {1}.", rel.name, relexpt.value);
+                                            if (Convert.ToSingle(rel.value) < (Convert.ToSingle(relexpt.value) + 0.01)
+                                                && Convert.ToSingle(rel.value) > (Convert.ToSingle(relexpt.value) - 0.01))
+                                            {
+                                                sendOutput(1, "Result {0} is expected value {1}.", rel.name, relexpt.value);
+                                                saveLogfile(sw, "Result {0} is expected value {1}.", rel.name, relexpt.value);
+                                            }
+                                            else
+                                            {
+                                                sendOutput(1, "Result {0} is {1}, is not expected value {2}.", rel.name, rel.value, relexpt.value);
+                                                saveLogfile(sw, "Result {0} is {1}, is not expected value {2}.", rel.name, rel.value, relexpt.value);
+                                                tr.Errors.Add(string.Format("Result {0} is {1}, is not expected value {2}.", rel.name, rel.value, relexpt.value));
+
+                                                bOk = false;
+                                            }
                                         }
                                         else
                                         {
                                             sendOutput(1, "Result {0} is {1}, is not expected value {2}.", rel.name, rel.value, relexpt.value);
+                                            saveLogfile(sw, "Result {0} is {1}, is not expected value {2}.", rel.name, rel.value, relexpt.value);
                                             tr.Errors.Add(string.Format("Result {0} is {1}, is not expected value {2}.", rel.name, rel.value, relexpt.value));
-
                                             bOk = false;
                                         }
                                     }
                                     else
                                     {
-                                        sendOutput(1, "Result {0} is {1}, is not expected value {2}.", rel.name, rel.value, relexpt.value);
-                                        tr.Errors.Add(string.Format("Result {0} is {1}, is not expected value {2}.", rel.name, rel.value, relexpt.value));
-                                        bOk = false;
+                                        sendOutput(1, "Result {0} is expected value {1}.", rel.name, relexpt.value);
+                                        saveLogfile(sw, "Result {0} is expected value {1}.", rel.name, relexpt.value);
                                     }
-                                }
-                                else
-                                {
-                                    sendOutput(1, "Result {0} is expected value {1}.", rel.name, relexpt.value);
                                 }
                             }
                         }
+                    }
+                    else
+                    {
+                        sendOutput(1, "Test function {0} is not found.", tf.name);
+                        saveLogfile(sw, "Test function {0} is not found.", tf.name);
+                        tr.Errors.Add(string.Format("Test function {0} is not found.", tf.name));
+                        bOk = false;
+                        continue;
                     }
                 }
                 if (bOk)
@@ -2129,19 +2237,23 @@ namespace CQC.ConTest
 
         }
 
-        public returncode GetIdentity(byte pollAddr)
+        public returncode GetIdentity(byte pollAddr, StreamWriter sw)
         {
+            saveLogfile(sw, "Polling address {0}.", pollAddr);
             //pollAddr,  chksum
             if (serialPort1.IsOpen)
             {
                 byte[] Buffer = new byte[] { 0xff, 0xff, 0xff, 0xff, 0xff, 0x02, 0x00, 0x00, 0x00, 0x02 };
                 mp.rcvlen = 0;
                 serialPort1.Write(Buffer, 0, 10);
-
                 string msgSent = mp.buildStringTypeInfo((byte)Buffer.Length, Buffer);
+                saveLogfile(sw, "Message sent to device.");
+                saveLogfile(sw, msgSent);
+                saveLogfile(sw, "Command 0 sent.");
             }
             else
             {
+                saveLogfile(sw, "Port is not avaliable.");
                 return returncode.eSerErr;
             }
             return returncode.eOk;
@@ -2247,8 +2359,10 @@ namespace CQC.ConTest
             myXmlTextWriter.WriteElementString("timemodified", tp.timemodified.ToString());
             myXmlTextWriter.WriteElementString("projectroot", tp.projectroot);
             myXmlTextWriter.WriteElementString("AutoSave", tp.AutoSave.ToString());
+            myXmlTextWriter.WriteElementString("TestReport", tp.TestReport.ToString());
             myXmlTextWriter.WriteElementString("FullPath", tp.FullPath);
             myXmlTextWriter.WriteElementString("Description", tp.Description);
+
 
             myXmlTextWriter.WriteElementString("ExecutiveDate", tp.ExecutiveDate);
             myXmlTextWriter.WriteElementString("BeginTestingDate", tp.BeginTestingDate);
@@ -2285,7 +2399,9 @@ namespace CQC.ConTest
                         myXmlTextWriter.WriteElementString("UserExtPrmData", dev.UserPrmData);
                         myXmlTextWriter.WriteElementString("CfgDataLen", dev.CfgDataLen.ToString());
                         myXmlTextWriter.WriteElementString("CfgData", dev.CfgData);
+                        myXmlTextWriter.WriteElementString("Description", dev.Description);
                         myXmlTextWriter.WriteElementString("Offline", dev.Offline.ToString());
+                        myXmlTextWriter.WriteElementString("gsdFile", dev.gsdFile);
 
                         myXmlTextWriter.WriteElementString("Model", dev.Model);
                         myXmlTextWriter.WriteElementString("DDRevision", dev.DDRevision);
@@ -2459,6 +2575,10 @@ namespace CQC.ConTest
                                 tp.AutoSave = Convert.ToBoolean(reader.ReadElementString().Trim());
                                 break;
 
+                            case "TestReport":
+                                tp.TestReport = Convert.ToBoolean(reader.ReadElementString().Trim());
+                                break;
+
                             case "FullPath":
                                 //tp.FullPath = reader.ReadElementString().Trim();
                                 break;
@@ -2593,6 +2713,10 @@ namespace CQC.ConTest
                                         if (eleme.Element("Offline") != null)
                                         {
                                             ddev.Offline = Convert.ToBoolean(eleme.Element("Offline").Value);
+                                        }
+                                        if (eleme.Element("gsdFile") != null)
+                                        {
+                                            ddev.gsdFile = eleme.Element("gsdFile").Value;
                                         }
 
 
@@ -3659,7 +3783,14 @@ namespace CQC.ConTest
             switch (rtype)
             {
                 case resultDataType.integer:
-                    value = Convert.ToInt32(svalue);
+                    if (svalue.Contains("0x"))
+                    {
+                        value = Convert.ToInt32(svalue, 16);
+                    }
+                    else
+                    {
+                        value = Convert.ToInt32(svalue);
+                    }
                     break;
 
                 case resultDataType.floatpoint:
@@ -3667,7 +3798,14 @@ namespace CQC.ConTest
                     break;
 
                 case resultDataType.octetstring:
-                    value = Convert.ToByte(svalue);
+                    if (svalue.Contains("0x"))
+                    {
+                        value = Convert.ToByte(svalue, 16);
+                    }
+                    else
+                    {
+                        value = Convert.ToByte(svalue);
+                    }
                     break;
 
                 case resultDataType.visiblestring:
