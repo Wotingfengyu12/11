@@ -131,13 +131,13 @@ Add test case description here.
 &lt;TestFunctions&gt;
 &lt;TestFunction Name = "" ParaNumber = "1" Repeat = "1"&gt;
 &lt;Parameters&gt;
-&lt;Parameter Name = "" DataType = "string"&gt;test&lt;/Parameter&gt;
-&lt;Parameter Name = "" DataType = "int"&gt;0000&lt;/Parameter&gt;
+&lt;Parameter Name = "" DataType = "visiblestring"&gt;test&lt;/Parameter&gt;
+&lt;Parameter Name = "" DataType = "integer"&gt;0000&lt;/Parameter&gt;
 &lt;/Parameters&gt;
 
 &lt;!-- Exepection of Test --&gt;
 &lt;Returns Response = "positive"&gt;
-&lt;Return Name = "" DataType = "string"&gt;test&lt;/Return&gt;
+&lt;Return Name = "" DataType = "visiblestring"&gt;test&lt;/Return&gt;
 &lt;/Returns&gt;
 &lt;/TestFunction&gt;
 &lt;/TestFunctions&gt;

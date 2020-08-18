@@ -246,35 +246,35 @@
             this.barDockControlTop.Dock = System.Windows.Forms.DockStyle.Top;
             this.barDockControlTop.Location = new System.Drawing.Point(0, 0);
             this.barDockControlTop.Manager = this.barManager1;
-            this.barDockControlTop.Margin = new System.Windows.Forms.Padding(2);
-            this.barDockControlTop.Size = new System.Drawing.Size(878, 28);
+            this.barDockControlTop.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            this.barDockControlTop.Size = new System.Drawing.Size(1003, 30);
             // 
             // barDockControlBottom
             // 
             this.barDockControlBottom.CausesValidation = false;
             this.barDockControlBottom.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.barDockControlBottom.Location = new System.Drawing.Point(0, 282);
+            this.barDockControlBottom.Location = new System.Drawing.Point(0, 368);
             this.barDockControlBottom.Manager = this.barManager1;
-            this.barDockControlBottom.Margin = new System.Windows.Forms.Padding(2);
-            this.barDockControlBottom.Size = new System.Drawing.Size(878, 25);
+            this.barDockControlBottom.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            this.barDockControlBottom.Size = new System.Drawing.Size(1003, 27);
             // 
             // barDockControlLeft
             // 
             this.barDockControlLeft.CausesValidation = false;
             this.barDockControlLeft.Dock = System.Windows.Forms.DockStyle.Left;
-            this.barDockControlLeft.Location = new System.Drawing.Point(0, 28);
+            this.barDockControlLeft.Location = new System.Drawing.Point(0, 30);
             this.barDockControlLeft.Manager = this.barManager1;
-            this.barDockControlLeft.Margin = new System.Windows.Forms.Padding(2);
-            this.barDockControlLeft.Size = new System.Drawing.Size(0, 254);
+            this.barDockControlLeft.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            this.barDockControlLeft.Size = new System.Drawing.Size(0, 338);
             // 
             // barDockControlRight
             // 
             this.barDockControlRight.CausesValidation = false;
             this.barDockControlRight.Dock = System.Windows.Forms.DockStyle.Right;
-            this.barDockControlRight.Location = new System.Drawing.Point(878, 28);
+            this.barDockControlRight.Location = new System.Drawing.Point(1003, 30);
             this.barDockControlRight.Manager = this.barManager1;
-            this.barDockControlRight.Margin = new System.Windows.Forms.Padding(2);
-            this.barDockControlRight.Size = new System.Drawing.Size(0, 254);
+            this.barDockControlRight.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            this.barDockControlRight.Size = new System.Drawing.Size(0, 338);
             // 
             // svgImageCollection1
             // 
@@ -311,14 +311,16 @@
             this.textEditorControl1.Highlighting = null;
             this.textEditorControl1.IsIconBarVisible = true;
             this.textEditorControl1.LineViewerStyle = ICSharpCode.TextEditor.Document.LineViewerStyle.FullRow;
-            this.textEditorControl1.Location = new System.Drawing.Point(0, 28);
+            this.textEditorControl1.Location = new System.Drawing.Point(0, 30);
+            this.textEditorControl1.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.textEditorControl1.Name = "textEditorControl1";
             this.barManager1.SetPopupContextMenu(this.textEditorControl1, this.popupMenu1);
-            this.textEditorControl1.Size = new System.Drawing.Size(878, 254);
+            this.textEditorControl1.Size = new System.Drawing.Size(1003, 338);
             this.textEditorControl1.TabIndex = 5;
             this.textEditorControl1.Text = resources.GetString("textEditorControl1.Text");
             this.textEditorControl1.SelectionChanged += new System.EventHandler(this.textEditorControl1_SelectionChanged);
             this.textEditorControl1.PositionChanged += new System.EventHandler(this.textEditorControl1_PositionChanged);
+            this.textEditorControl1.TextChanged += new System.EventHandler(this.textEditorControl1_TextChanged);
             this.textEditorControl1.Load += new System.EventHandler(this.textEditorControl1_Load);
             // 
             // popupMenu1
@@ -347,16 +349,16 @@
             // 
             // ucTextEditor
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 14F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 18F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.textEditorControl1);
             this.Controls.Add(this.barDockControlLeft);
             this.Controls.Add(this.barDockControlRight);
             this.Controls.Add(this.barDockControlBottom);
             this.Controls.Add(this.barDockControlTop);
-            this.Margin = new System.Windows.Forms.Padding(2);
+            this.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.Name = "ucTextEditor";
-            this.Size = new System.Drawing.Size(878, 307);
+            this.Size = new System.Drawing.Size(1003, 395);
             this.Load += new System.EventHandler(this.ucTextEditor_Load);
             ((System.ComponentModel.ISupportInitialize)(this.barManager1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.repositoryItemTextEdit2)).EndInit();

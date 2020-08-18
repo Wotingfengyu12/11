@@ -80,13 +80,13 @@ namespace CQC.Controls {
         ///&lt;TestFunctions&gt;
         ///&lt;TestFunction Name = &quot;&quot; ParaNumber = &quot;1&quot; Repeat = &quot;1&quot;&gt;
         ///&lt;Parameters&gt;
-        ///&lt;Parameter Name = &quot;&quot; DataType = &quot;string&quot;&gt;test&lt;/Parameter&gt;
-        ///&lt;Parameter Name = &quot;&quot; DataType = &quot;int&quot;&gt;0000&lt;/Parameter&gt;
+        ///&lt;Parameter Name = &quot;&quot; DataType = &quot;visiblestring&quot;&gt;test&lt;/Parameter&gt;
+        ///&lt;Parameter Name = &quot;&quot; DataType = &quot;integer&quot;&gt;0000&lt;/Parameter&gt;
         ///&lt;/Parameters&gt;
         ///
         ///&lt;!-- Exepection of Test --&gt;
         ///&lt;Returns Response = &quot;positive&quot;&gt;
-        ///&lt;Return Name = &quot;&quot; DataType = &quot;stri [字符串的其余部分被截断]&quot;; 的本地化字符串。
+        ///&lt;Return Name = &quot;&quot; DataT [字符串的其余部分被截断]&quot;; 的本地化字符串。
         /// </summary>
         internal static string TestCaseTemplate {
             get {

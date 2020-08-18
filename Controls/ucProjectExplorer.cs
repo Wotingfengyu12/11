@@ -812,9 +812,9 @@ namespace CQC.ConTest
                 // ²âÊÔ½Úµã
                 case NodeType.testcase:
                     CreateDXMenuItem(e, "Display Test Log", hitInfo.Node,
-                        new EventHandler(DisplayTestLog), fileTypeSvgImages.GetImage(41));
+                        new EventHandler(DisplayTestLog), fileTypeSvgImages.GetImage(27));
                     CreateDXMenuItem(e, "Delete", hitInfo.Node,
-                      new EventHandler(DisposeTestLog), fileTypeSvgImages.GetImage(27));
+                      new EventHandler(DisposeTestLog), fileTypeSvgImages.GetImage(41));
                     break;
 
                 case NodeType.hartdevice:

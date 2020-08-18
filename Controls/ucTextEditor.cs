@@ -12,6 +12,8 @@ namespace CQC.ConTest
 {
     public partial class ucTextEditor : DevExpress.XtraEditors.XtraUserControl
     {
+        private TestCaseModel m_SourceData = null;
+
         public ucTextEditor()
         {
             InitializeComponent();
@@ -55,6 +57,7 @@ namespace CQC.ConTest
         {
             if (caseModel != null)
             {
+                m_SourceData = caseModel;
                 try
                 {
                     using (Stream stream = new MemoryStream())
@@ -148,7 +151,7 @@ namespace CQC.ConTest
 
         public void SaveToFile(string filename)
         {
-            textEditorControl1.SaveFile(filename);
+            //textEditorControl1.SaveFile(filename);
         }
 
         private void redo_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
@@ -235,6 +238,14 @@ namespace CQC.ConTest
         {
             bsiLine.Caption = "Ln: " + (textEditorControl1.ActiveTextAreaControl.Caret.Line + 1).ToString();
             bsiChar.Caption = "Ch: " + (textEditorControl1.ActiveTextAreaControl.Caret.Column + 1).ToString();
+        }
+
+        private void textEditorControl1_TextChanged(object sender, EventArgs e)
+        {
+            if (null != m_SourceData)
+            {
+                m_SourceData.TextValue = this.textEditorControl1.Text;
+            }
         }
     }
 }
