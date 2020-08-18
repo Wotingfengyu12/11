@@ -969,9 +969,6 @@ namespace CQC.ConTest
 
                 case NodeType.testcase:
                     TestCaseModel caseModel = ni.SourceData as TestCaseModel;
-                    caseModel.Name = ni.nodename;
-                    caseModel.TextValue = testProjectExplorer.GetTestCaseValue(caseModel.FoldPath);
-                    ni.SourceData = caseModel;
                     DispTestCase(caseModel);
                     break;
 
