@@ -32,7 +32,7 @@ namespace CQC.Controls.Models
         public string Name
         {
             get => m_Name;
-            set => m_Name = value; 
+            set => m_Name = value;
         }
 
         /// <summary>
@@ -59,22 +59,22 @@ namespace CQC.Controls.Models
         /// <summary>
         /// 获取或设置测试内容
         /// </summary>
-        public string TextValue 
+        public string TextValue
         {
-            get => m_TextValue; 
-            set => m_TextValue = value; 
+            get => m_TextValue;
+            set => m_TextValue = value;
         }
 
-        public string NewName 
+        public string NewName
         {
-            get => m_NewName; 
+            get => m_NewName;
             set => m_NewName = value;
         }
 
         public bool IsChanged
-        { 
-            get; 
-            set; 
+        {
+            get;
+            set;
         }
 
         public bool IsRename
@@ -157,7 +157,6 @@ namespace CQC.Controls.Models
                 Name = NewName;
             }
 
-            /*
             string filePath = Path.Combine(ParentNodedata.FoldPath, clsName, name + ".cas");
 
             using (FileStream stream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write))
@@ -166,7 +165,6 @@ namespace CQC.Controls.Models
                 streamWriter.Write(this.TextValue);
                 streamWriter.Close();
             }
-            */
         }
 
         public void Disposed()

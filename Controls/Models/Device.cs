@@ -251,8 +251,52 @@ namespace CQC.ConTest
             set;
         }
 
+        [CategoryAttribute("General"), DescriptionAttribute("DP Device Name(example: L_MAG)"), ReadOnlyAttribute(false)]
+        public string Model
+        {
+            get;
+            set;
+        }
+
+        [CategoryAttribute("General"), DescriptionAttribute("DP Device revision number"), ReadOnlyAttribute(false)]
+        public string DeviceRevision
+        {
+            get;
+            set;
+        }
+
+        [CategoryAttribute("General"), DescriptionAttribute("DP Device DD revision number"), ReadOnlyAttribute(false)]
+        public string DDRevision
+        {
+            get;
+            set;
+        }
+
+
+        [CategoryAttribute("General"), DescriptionAttribute("DP Device HART Protocol Revision"), ReadOnlyAttribute(false)]
+        public string ProtocolRevision
+        {
+            get;
+            set;
+        }
+
+
+        [CategoryAttribute("General"), DescriptionAttribute("DP Device Software Revision"), ReadOnlyAttribute(false)]
+        public string SoftwareRevision
+        {
+            get;
+            set;
+        }
+
         [CategoryAttribute("General"), DescriptionAttribute("DP Device detailed information"), ReadOnlyAttribute(false)]
         public string Description
+        {
+            get;
+            set;
+        }
+
+        [CategoryAttribute("General"), DescriptionAttribute("Type of Device (example: pressure transmitter)"), ReadOnlyAttribute(false)]
+        public string TypeofDevice
         {
             get;
             set;
@@ -348,6 +392,13 @@ namespace CQC.ConTest
             set;
         }
 
+        [CategoryAttribute("General"), DescriptionAttribute("Hart Device Name(example: L_MAG)"), ReadOnlyAttribute(false)]
+        public string Model
+        {
+            get;
+            set;
+        }
+
         [CategoryAttribute("General"), DescriptionAttribute("Hart Device revision number"), ReadOnlyAttribute(false)]
         public string DeviceRevision
         {
@@ -363,8 +414,30 @@ namespace CQC.ConTest
         }
 
 
+        [CategoryAttribute("General"), DescriptionAttribute("Hart Device HART Protocol Revision"), ReadOnlyAttribute(false)]
+        public string ProtocolRevision
+        {
+            get;
+            set;
+        }
+
+
+        [CategoryAttribute("General"), DescriptionAttribute("Hart Device Software Revision"), ReadOnlyAttribute(false)]
+        public string SoftwareRevision
+        {
+            get;
+            set;
+        }
+
         [CategoryAttribute("General"), DescriptionAttribute("Hart Device detailed information"), ReadOnlyAttribute(false)]
         public string Description
+        {
+            get;
+            set;
+        }
+
+        [CategoryAttribute("General"), DescriptionAttribute("Type of Device (example: pressure transmitter)"), ReadOnlyAttribute(false)]
+        public string TypeofDevice
         {
             get;
             set;

@@ -26,18 +26,17 @@ namespace CQC.WordTool
         /// <summary>
         /// 构造函数
         /// </summary>
-        public Word()
+        public Word(string filePath, string templatePath)
         {
-            Init();
-        }
-
-        /// <summary>
-        /// 构造函数
-        /// </summary>
-        public Word(string filePath)
-        {
-            m_FilePath = filePath;
-            Init();
+            try
+            {
+                m_FilePath = filePath;
+                Init(templatePath);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
         }
         #endregion
 
@@ -46,14 +45,14 @@ namespace CQC.WordTool
         /// <summary>
         /// 初始化
         /// </summary>
-        private void Init()
+        private void Init(string templatePath)
         {
             try
             {
 
                 // 由于使用的是COM 库，因此有许多变量需要用Missing.Value 代替
                 Object Nothing = Missing.Value;
-                object path = Path.GetFullPath(@"Resources\TestReport.docx");
+                object path = Path.GetFullPath(templatePath);
 
                 try
                 {

@@ -207,9 +207,20 @@ namespace CQC.ConTest
 
         #endregion
 
+        #region Operator
+
+        [CategoryAttribute("Operator"), DisplayName("Begin Testing Date"), DescriptionAttribute("Begin Testing Date")]
+        public string BeginTestingDate { get; set; }
+
+        [CategoryAttribute("Operator"), DisplayName("Executive Date"), DescriptionAttribute("Executive Date")]
+        public string ExecutiveDate { get; set; }
+
+        [CategoryAttribute("Operator"), DisplayName("Document File"), DescriptionAttribute("The product specification including device specific details as per Field Device Specification Guide (HCF_LIT-18) ")]
+        public string DocName { get; set; }
+
+        #endregion
 
         [CategoryAttribute("Save"), DescriptionAttribute("The time that modified.")]
-
         public string LastModified
         {
             get
@@ -270,6 +281,7 @@ namespace CQC.ConTest
                 }
             }
         }
+
         [Browsable(false)]
         public bool Modified
         {
